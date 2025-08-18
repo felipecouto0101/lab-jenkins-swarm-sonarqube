@@ -193,19 +193,10 @@ vagrant ssh worker1 -c "ping -c 3 192.168.56.10"
 
 - **Sistema Operacional**: Ubuntu 20.04 LTS
 - **Docker**: 28.1.1
-- **Docker Compose**: 1.25.5
 - **Rede**: 192.168.56.0/24 (host-only)
 - **RAM por VM**: ~1GB
 - **Disco por VM**: ~40GB
 
-## 🎯 Casos de uso
-
-Este ambiente é ideal para:
-- Aprender Docker Swarm
-- Testar aplicações distribuídas
-- Simular ambientes de produção
-- Estudar orquestração de containers
-- Praticar DevOps e CI/CD
 
 ## 📝 Notas importantes
 
@@ -214,15 +205,3 @@ Este ambiente é ideal para:
 - Cada VM tem acesso à internet via NAT
 - Os arquivos do projeto são sincronizados em `/vagrant` dentro das VMs
 - O plugin vagrant-vbguest é desabilitado para evitar conflitos
-
-## 🤝 Contribuindo
-
-1. Fork o projeto
-2. Crie uma branch para sua feature
-3. Commit suas mudanças
-4. Push para a branch
-5. Abra um Pull Request
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.
