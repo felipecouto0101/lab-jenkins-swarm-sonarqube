@@ -28,7 +28,7 @@ Este projeto configura automaticamente um cluster Docker Swarm com 3 VMs usando 
 
 ```bash
 git clone <seu-repositorio>
-cd lab-devOps-2
+cd lab-devOps-2/lab-swarm
 vagrant up
 ```
 
@@ -88,9 +88,10 @@ Abra o navegador e acesse:
 
 ```
 lab-devOps-2/
-├── Vagrantfile          # Configuração das VMs
-├── provision.sh         # Script de instalação do Docker
-└── README.md           # Este arquivo
+└── lab-swarm/
+    ├── Vagrantfile          # Configuração das VMs
+    ├── provision.sh         # Script de instalação do Docker
+    └── README.md           # Este arquivo
 ```
 
 ## ⚙️ Configuração das VMs
