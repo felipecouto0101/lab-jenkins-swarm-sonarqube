@@ -164,6 +164,78 @@ Para integração com CI/CD:
 4. Gere um novo token
 5. Use o token nas integrações
 
+## 🔗 Integração com Jenkins
+
+### 1. Instalar plugins no Jenkins
+
+- **SonarQube Scanner** plugin
+- **Quality Gates** plugin (opcional)
+
+### 2. Configurar SonarQube no Jenkins
+
+1. Vá em **Manage Jenkins > Configure System**
+2. Na seção **SonarQube servers**:
+   - Name: `SonarQube`
+   - Server URL: `http://192.168.56.30:9000`
+   - Server authentication token: [token gerado no SonarQube]
+
+### 3. Configurar SonarScanner
+
+1. Vá em **Manage Jenkins > Global Tool Configuration**
+2. Na seção **SonarQube Scanner**:
+   - Name: `SonarScanner`
+   - Install automatically: ✓
+   - Version: Latest
+
+### 4. Pipeline exemplo
+
+```groovy
+pipeline {
+    agent any
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/seu-usuario/seu-projeto.git'
+            }
+        }
+        
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        sonar-scanner \
+                        -Dsonar.projectKey=meu-projeto \
+                        -Dsonar.sources=. \
+                        -Dsonar.java.binaries=target/classes
+                    '''
+                }
+            }
+        }
+        
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+    }
+}
+```
+
+### 5. Job Freestyle exemplo
+
+1. **Build Steps** > **Execute SonarQube Scanner**:
+   - Analysis properties:
+   ```
+   sonar.projectKey=meu-projeto
+   sonar.sources=.
+   sonar.java.binaries=target/classes
+   ```
+
+2. **Post-build Actions** > **Quality Gates**
+
 ## 📈 Métricas disponíveis
 
 - **Bugs** - Problemas que podem causar comportamento incorreto
