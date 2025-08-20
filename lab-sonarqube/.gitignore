@@ -1,0 +1,21 @@
+# Vagrant
+.vagrant/
+*.log
+
+# SonarQube
+sonarqube-*/
+*.zip
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*~
