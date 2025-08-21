@@ -132,6 +132,163 @@ No GitHub: **Settings > Developer settings > Personal access tokens**
 </mirrors>
 ```
 
+## 🔗 Integração com Outros Labs
+
+### Plugins necessários para integração completa
+
+Vá em **Manage Jenkins > Manage Plugins > Available** e instale:
+
+#### Para SonarQube:
+- SonarQube Scanner
+- Quality Gates Plugin
+
+#### Para Nexus:
+- Nexus Artifact Uploader
+- Pipeline: Maven Integration
+
+#### Para Docker/Swarm:
+- Docker Pipeline
+- Docker Commons Plugin
+- SSH Agent Plugin
+
+### Configurar Tools
+
+Vá em **Manage Jenkins > Global Tool Configuration**:
+
+#### Maven:
+- Name: `Maven-3.8`
+- Install automatically: ✓
+- Version: 3.8.6
+
+#### SonarQube Scanner:
+- Name: `SonarScanner`
+- Install automatically: ✓
+- Version: Latest
+
+### Configurar Credenciais
+
+Vá em **Manage Jenkins > Manage Credentials > Global**:
+
+#### Nexus:
+- Tipo: **Username with password**
+- Username: `admin`
+- Password: [senha do Nexus]
+- ID: `nexus-credentials`
+
+#### SonarQube:
+- Tipo: **Secret text**
+- Secret: [token do SonarQube]
+- ID: `sonar-token`
+
+#### Docker Swarm SSH:
+- Tipo: **SSH Username with private key**
+- Username: `vagrant`
+- Private Key: [chave SSH do Swarm]
+- ID: `swarm-ssh-key`
+
+### Configurar SonarQube Server
+
+Vá em **Manage Jenkins > Configure System > SonarQube servers**:
+- Name: `SonarQube`
+- Server URL: `http://192.168.56.30:9000`
+- Server authentication token: `sonar-token`
+
+### Pipeline de integração completa
+
+```groovy
+pipeline {
+    agent any
+    
+    tools {
+        maven 'Maven-3.8'
+    }
+    
+    environment {
+        NEXUS_URL = 'http://192.168.56.20:8081'
+        SWARM_MANAGER = '192.168.56.10'
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                git credentialsId: 'github-credentials',
+                    url: 'https://github.com/seu-usuario/seu-repo.git',
+                    branch: 'main'
+            }
+        }
+        
+        stage('Build & Test') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+        
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh 'mvn sonar:sonar'
+                }
+            }
+        }
+        
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+        
+        stage('Deploy to Nexus') {
+            steps {
+                nexusArtifactUploader(
+                    nexusVersion: 'nexus3',
+                    protocol: 'http',
+                    nexusUrl: '192.168.56.20:8081',
+                    groupId: 'com.example',
+                    version: '${BUILD_NUMBER}',
+                    repository: 'maven-releases',
+                    credentialsId: 'nexus-credentials',
+                    artifacts: [
+                        [artifactId: 'myapp',
+                         classifier: '',
+                         file: 'target/myapp.jar',
+                         type: 'jar']
+                    ]
+                )
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    def image = docker.build("myapp:${BUILD_NUMBER}")
+                }
+            }
+        }
+        
+        stage('Deploy to Swarm') {
+            steps {
+                sshagent(['swarm-ssh-key']) {
+                    sh """
+                        ssh vagrant@${SWARM_MANAGER} '
+                            docker service update --image myapp:${BUILD_NUMBER} myapp ||
+                            docker service create --name myapp --replicas 3 -p 8080:8080 myapp:${BUILD_NUMBER}
+                        '
+                    """
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            cleanWs()
+        }
+    }
+}
+```
+
 ## 🔧 Comandos Úteis
 
 ```bash
