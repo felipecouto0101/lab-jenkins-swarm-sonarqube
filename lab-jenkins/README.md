@@ -1,61 +1,138 @@
-# Jenkins Lab com Vagrant
+# Jenkins + Nexus Lab com Vagrant
 
-Este projeto configura automaticamente um servidor Jenkins usando Vagrant e VirtualBox.
+Este projeto configura um ambiente completo com Jenkins e Nexus Repository Manager usando Vagrant e VirtualBox.
 
 ## 📋 Pré-requisitos
 
 - [Vagrant](https://www.vagrantup.com/downloads) instalado
 - [VirtualBox](https://www.virtualbox.org/wiki/Downloads) instalado
-- Pelo menos 2GB de RAM disponível
+- Pelo menos 4GB de RAM disponível
 - Conexão com internet
 
-## 🚀 Como usar
+## 🚀 Início Rápido
 
-### 1. Iniciar o ambiente
+### 1. Iniciar a máquina virtual
 
 ```bash
 cd lab-jenkins
 vagrant up
 ```
 
-### 2. Acessar Jenkins
+### 2. Instalar Jenkins (obrigatório)
 
-Abra o navegador e acesse: http://localhost:8080
-
-### 3. Configuração inicial
+**Importante**: O Jenkins precisa ser instalado manualmente após o provisionamento.
 
 ```bash
-# Obter senha inicial do Jenkins
 vagrant ssh jenkins
-sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+
+# Adicionar chave e repositório Jenkins
+curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/" | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
+
+# Instalar Jenkins
+sudo apt-get update
+sudo apt-get install -y jenkins
+
+# Iniciar Jenkins
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
+
+exit
 ```
 
-### 4. Configurar Jenkins
+### 3. Acessar os serviços
 
-1. Cole a senha inicial no navegador
-2. Instale os plugins sugeridos
-3. Crie o usuário administrador
-4. Configure a URL do Jenkins
+- **Jenkins**: http://localhost:8080
+- **Nexus**: http://localhost:8081
 
-## ⚙️ Configuração da VM
+### 4. Obter senhas iniciais
+
+```bash
+# Senha do Jenkins
+vagrant ssh jenkins -c "sudo cat /var/lib/jenkins/secrets/initialAdminPassword"
+
+# Senha do Nexus
+vagrant ssh jenkins -c "sudo cat /opt/sonatype-work/nexus3/admin.password"
+```
+
+### 5. Configuração inicial
+
+#### Jenkins:
+1. Acesse http://localhost:8080
+2. Cole a senha inicial
+3. Instale os plugins sugeridos
+4. Crie o usuário administrador
+
+#### Nexus:
+1. Acesse http://localhost:8081
+2. Login: `admin` / senha do arquivo admin.password
+3. Altere a senha quando solicitado
+
+## ⚙️ Especificações da VM
 
 | Componente | Valor |
 |------------|-------|
 | OS | Ubuntu 20.04 LTS |
-| RAM | 2GB |
+| RAM | 4GB |
 | CPU | 2 cores |
 | IP | 192.168.56.20 |
-| Porta Jenkins | 8080 |
-| Porta Agents | 50000 |
+| Jenkins | Porta 8080 |
+| Nexus | Porta 8081 |
 
-## 🛠️ Software instalado
+## 🛠️ Software Instalado
 
-- **Java 11** - Runtime para Jenkins
-- **Jenkins** - Servidor de CI/CD
+- **Java 17** - Runtime para Jenkins e Nexus
+- **Jenkins** - Servidor de CI/CD (instalação manual)
+- **Nexus 3.75.1** - Gerenciador de artefatos (automático)
 - **Docker** - Para pipelines containerizados
 - **Git** - Controle de versão
 
-## 🔧 Comandos úteis
+## 🔗 Integração com GitHub
+
+### 1. Instalar plugins no Jenkins
+
+Vá em **Manage Jenkins > Manage Plugins > Available**:
+- GitHub Integration Plugin
+- GitHub Branch Source Plugin
+- Pipeline: GitHub Groovy Libraries
+
+
+### 2. Personal Access Token
+
+No GitHub: **Settings > Developer settings > Personal access tokens**
+- Permissões: `repo`, `admin:repo_hook`, `user:email`
+
+
+### 3. Configurar credenciais
+
+1. **Manage Jenkins > Manage Credentials > Global > Add Credentials**
+2. Tipo: **Username with password**
+   - Username: seu-usuario-github
+   - Password: [Personal Access Token do GitHub]
+   - ID: `github-credentials`
+
+
+## 📦 Nexus Repository Manager
+
+### Repositórios padrão:
+- **maven-central** - Proxy do Maven Central
+- **maven-releases** - Releases
+- **maven-snapshots** - Snapshots
+- **maven-public** - Grupo agregado
+
+### Configuração Maven:
+```xml
+<!-- settings.xml -->
+<mirrors>
+  <mirror>
+    <id>nexus</id>
+    <mirrorOf>*</mirrorOf>
+    <url>http://192.168.56.20:8081/repository/maven-public/</url>
+  </mirror>
+</mirrors>
+```
+
+## 🔧 Comandos Úteis
 
 ```bash
 # Status da VM
@@ -64,132 +141,59 @@ vagrant status
 # SSH na VM
 vagrant ssh jenkins
 
-# Reiniciar Jenkins
+# Verificar serviços
+vagrant ssh jenkins -c "sudo systemctl status jenkins"
+vagrant ssh jenkins -c "sudo systemctl status nexus"
+
+# Reiniciar serviços
 vagrant ssh jenkins -c "sudo systemctl restart jenkins"
+vagrant ssh jenkins -c "sudo systemctl restart nexus"
 
-# Ver logs do Jenkins
-vagrant ssh jenkins -c "sudo journalctl -u jenkins -f"
-
-# Parar VM
+# Parar/Destruir VM
 vagrant halt
-
-# Destruir VM
 vagrant destroy -f
 ```
 
-## 📁 Estrutura do projeto
+## 🛠️ Solução de Problemas
 
-```
-lab-jenkins/
-├── Vagrantfile          # Configuração da VM
-├── provision.sh         # Script de instalação
-└── README.md           # Este arquivo
-```
-
-## 🐳 Usando Docker no Jenkins
-
-O Docker está instalado e o usuário jenkins foi adicionado ao grupo docker:
-
+### Jenkins não responde
 ```bash
-# Testar Docker no Jenkins
-vagrant ssh jenkins
-sudo -u jenkins docker run hello-world
-```
-
-## 🔗 Integração com GitHub
-
-### 1. Instalar plugins necessários
-
-Vá em **Manage Jenkins > Manage Plugins > Available** e instale:
-
-- **GitHub Integration Plugin**
-- **GitHub Branch Source Plugin** 
-- **Pipeline: GitHub Groovy Libraries**
-
-Ou via CLI:
-```bash
-vagrant ssh jenkins
-sudo -u jenkins java -jar /var/cache/jenkins/war/WEB-INF/jenkins-cli.jar -s http://localhost:8080/ install-plugin github github-branch-source pipeline-github-lib
-```
-
-### 2. Configurar credenciais GitHub
-
-1. Vá em **Manage Jenkins > Manage Credentials**
-2. Clique em **Global** > **Add Credentials**
-3. Tipo: **Username with password**
-   - Username: seu-usuario-github
-   - Password: [Personal Access Token]
-   - ID: `github-credentials`
-
-### 3. Criar Personal Access Token
-
-1. GitHub > **Settings > Developer settings > Personal access tokens**
-2. **Generate new token** com permissões:
-   - `repo` (acesso completo aos repositórios)
-   - `admin:repo_hook` (webhooks)
-   - `user:email` (acesso ao email)
-
-### 4. Configurar Webhook (opcional)
-
-1. No repositório GitHub: **Settings > Webhooks**
-2. **Add webhook**:
-   - Payload URL: `http://192.168.56.20:8080/github-webhook/`
-   - Content type: `application/json`
-   - Events: `Just the push event`
-
-
-
-### 5. Job Freestyle com GitHub
-
-1. **New Item** > **Freestyle project**
-2. **Source Code Management**:
-   - Git
-   - Repository URL: `https://github.com/seu-usuario/seu-repo.git`
-   - Credentials: `github-credentials`
-   - Branch: `*/main`
-3. **Build Triggers**:
-   - GitHub hook trigger for GITScm polling
-4. **Build Steps**: Adicione seus comandos
-
-### 6. Multibranch Pipeline
-
-1. **New Item** > **Multibranch Pipeline**
-2. **Branch Sources** > **Add source** > **GitHub**
-3. Configurar:
-   - Credentials: `github-credentials`
-   - Repository HTTPS URL: `https://github.com/seu-usuario/seu-repo`
-   - Behaviors: Discover branches, Discover pull requests
-
-## 🛠️ Solução de problemas
-
-### Jenkins não inicia
-```bash
+# Verificar status
 vagrant ssh jenkins -c "sudo systemctl status jenkins"
+
+# Ver logs
+vagrant ssh jenkins -c "sudo journalctl -u jenkins -f"
+
+# Reinstalar se necessário
+vagrant ssh jenkins -c "sudo apt-get install --reinstall jenkins"
+```
+
+### Nexus não responde
+```bash
+# Verificar status
+vagrant ssh jenkins -c "sudo systemctl status nexus"
+
+# Ver logs
+vagrant ssh jenkins -c "sudo tail -f /opt/sonatype-work/nexus3/log/nexus.log"
+
+# Verificar memória (Nexus precisa de pelo menos 2GB)
+vagrant ssh jenkins -c "free -h"
 ```
 
 ### Problemas de memória
 ```bash
-# Aumentar heap do Jenkins
-vagrant ssh jenkins
-sudo nano /etc/default/jenkins
-# Adicionar: JAVA_ARGS="-Xmx1024m"
-sudo systemctl restart jenkins
+# Verificar uso atual
+vagrant ssh jenkins -c "free -h"
+
+# Se necessário, aumente a memória no Vagrantfile:
+# vb.memory = "6144"  # 6GB
 ```
 
-### Resetar senha admin
+### Resetar senhas
 ```bash
-vagrant ssh jenkins
-sudo systemctl stop jenkins
-sudo rm /var/lib/jenkins/config.xml
-sudo systemctl start jenkins
-```
+# Jenkins - remover configuração
+vagrant ssh jenkins -c "sudo systemctl stop jenkins && sudo rm /var/lib/jenkins/config.xml && sudo systemctl start jenkins"
 
-### Problemas com GitHub
-```bash
-# Testar conectividade
-vagrant ssh jenkins
-curl -I https://api.github.com
-
-# Verificar credenciais
-# Vá em Manage Jenkins > Manage Credentials > Test Connection
+# Nexus - senha está sempre em:
+vagrant ssh jenkins -c "sudo cat /opt/sonatype-work/nexus3/admin.password"
 ```
