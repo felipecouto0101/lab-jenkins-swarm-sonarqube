@@ -18,24 +18,31 @@ cd lab-jenkins
 vagrant up
 ```
 
-### 2. Instalar Jenkins (obrigatório)
+### 2. Configuração manual (obrigatória)
 
-**Importante**: O Jenkins precisa ser instalado manualmente após o provisionamento.
+**Importante**: Jenkins e Docker precisam ser configurados manualmente após o provisionamento.
 
 ```bash
 vagrant ssh jenkins
 
-# Adicionar chave e repositório Jenkins
+# 1. Instalar Jenkins
 curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null
 echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/" | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
-
-# Instalar Jenkins
 sudo apt-get update
 sudo apt-get install -y jenkins
 
-# Iniciar Jenkins
-sudo systemctl start jenkins
+# 2. Configurar Docker para Jenkins
+sudo usermod -aG docker jenkins
+
+# 3. Habilitar e reiniciar Jenkins
 sudo systemctl enable jenkins
+sudo systemctl restart jenkins
+
+# 4. Verificar configurações
+echo "Verificando configurações..."
+groups jenkins
+sudo systemctl status jenkins
+sudo systemctl status nexus
 
 exit
 ```
@@ -111,6 +118,33 @@ No GitHub: **Settings > Developer settings > Personal access tokens**
    - Password: [Personal Access Token do GitHub]
    - ID: `github-credentials`
 
+### 4. Criar Pipeline Job
+
+1. **Dashboard > New Item**
+2. Nome: `meu-pipeline`
+3. Tipo: **Pipeline**
+4. Clique **OK**
+
+### 5. Configurar Pipeline
+
+#### Opção A - Pipeline script from SCM (Recomendado):
+1. **Configure** do seu job
+2. **Pipeline > Definition**: `Pipeline script from SCM`
+3. **SCM**: `Git`
+4. **Repository URL**: URL do seu repositório GitHub
+5. **Credentials**: `github-credentials`
+6. **Branch**: `*/main`
+7. **Script Path**: `Jenkinsfile` (exatamente assim)
+8. **Save**
+
+#### Opção B - Pipeline script direto:
+1. **Pipeline > Definition**: `Pipeline script`
+2. Cole o código do pipeline no campo **Script**
+3. **Save**
+
+**Importante**: Para usar a Opção A, seu repositório deve ter um arquivo `Jenkinsfile` na raiz.
+
+
 
 ## 📦 Nexus Repository Manager
 
@@ -161,7 +195,7 @@ Vá em **Manage Jenkins > Global Tool Configuration**:
 - Version: 3.8.6
 
 #### SonarQube Scanner:
-- Name: `SonarScanner`
+- Name: `SonarQubeScanner` (exatamente assim)
 - Install automatically: ✓
 - Version: Latest
 
@@ -189,7 +223,7 @@ Vá em **Manage Jenkins > Manage Credentials > Global**:
 ### Configurar SonarQube Server
 
 Vá em **Manage Jenkins > Configure System > SonarQube servers**:
-- Name: `SonarQube`
+- Name: `Sonarqube` 
 - Server URL: `http://192.168.56.30:9000`
 - Server authentication token: `sonar-token`
 
@@ -224,9 +258,12 @@ pipeline {
         }
         
         stage('SonarQube Analysis') {
+            environment {
+                SCANNER_HOME = tool 'SonarQubeScanner'
+            }
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh 'mvn sonar:sonar'
+                withSonarQubeEnv('Sonarqube') {
+                    sh '${SCANNER_HOME}/bin/sonar-scanner'
                 }
             }
         }
@@ -344,6 +381,19 @@ vagrant ssh jenkins -c "free -h"
 
 # Se necessário, aumente a memória no Vagrantfile:
 # vb.memory = "6144"  # 6GB
+```
+
+### Problemas com Docker
+```bash
+# Verificar se jenkins está no grupo docker
+vagrant ssh jenkins -c "groups jenkins"
+# Deve mostrar: jenkins : jenkins docker
+
+# Se não estiver, adicionar:
+vagrant ssh jenkins -c "sudo usermod -aG docker jenkins && sudo systemctl restart jenkins"
+
+# Testar Docker
+vagrant ssh jenkins -c "sudo -u jenkins docker run hello-world"
 ```
 
 ### Resetar senhas
