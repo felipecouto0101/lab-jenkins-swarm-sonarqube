@@ -1,0 +1,13 @@
+# Kubernetes config files
+kubeconfig
+*.kubeconfig
+.kube/
+
+# Private keys
+*.key
+*.pem
+id_rsa*
+id_ed25519*
+
+# Vagrant
+.vagrant/
