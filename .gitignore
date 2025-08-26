@@ -1,7 +1,7 @@
 # Vagrant
 .vagrant/
 *.log
-
+vagrant/
 # VirtualBox
 *.vdi
 *.vmdk
