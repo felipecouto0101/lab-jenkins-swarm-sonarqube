@@ -1,6 +1,6 @@
 # DevOps Labs com Vagrant
 
-Este projeto contém 3 laboratórios práticos de DevOps usando Vagrant e VirtualBox para criar ambientes isolados e reproduzíveis.
+Este projeto contém 4 laboratórios práticos de DevOps usando Vagrant e VirtualBox para criar ambientes isolados e reproduzíveis com pipeline CI/CD completo.
 
 ## 🎯 Objetivo
 
@@ -10,7 +10,7 @@ Fornecer ambientes de desenvolvimento e aprendizado para ferramentas essenciais 
 
 - [Vagrant](https://www.vagrantup.com/downloads) instalado
 - [VirtualBox](https://www.virtualbox.org/wiki/Downloads) instalado
-- Pelo menos 8GB de RAM disponível (para executar todos os labs)
+- Pelo menos 10GB de RAM disponível (para executar todos os labs)
 - Conexão com internet
 
 ## 🧪 Laboratórios Disponíveis
@@ -50,6 +50,18 @@ Cluster Docker Swarm com:
 
 **Recursos**: 1GB RAM por node (3GB total)
 
+### 4. ☸️ K3s Lab
+**Localização**: `lab-k3s/`
+
+Cluster Kubernetes lightweight com:
+- K3s (Kubernetes)
+- Docker Registry integrado
+- Configuração para registries inseguros
+- Deploy automático via Jenkins
+
+**Acesso**: http://localhost:8084 (apps), Registry: http://localhost:5000  
+**Recursos**: 2GB RAM, 2 CPUs
+
 ## 🚀 Início Rápido
 
 ### Executar um laboratório específico:
@@ -70,89 +82,56 @@ cd lab-swarm && vagrant up
 cd lab-jenkins && vagrant up &
 cd lab-sonarqube && vagrant up &
 cd lab-swarm && vagrant up &
+cd lab-k3s && vagrant up &
 ```
 
-## 🔗 Integrações
+## 🔗 Integrações e Pipeline CI/CD
 
-### Jenkins + SonarQube
-- Configure SonarQube server no Jenkins: `http://192.168.56.30:9000`
-- Use tokens de autenticação para integração
-- Pipelines com Quality Gates automáticos
+### Pipeline Completo: Jenkins → SonarQube → Nexus → K3s
+O projeto implementa um pipeline DevOps completo:
 
-### Jenkins + GitHub
-- Webhooks para builds automáticos
-- Multibranch pipelines
-- Pull request validation
+1. **Build & Test** - Compilação e testes Java
+2. **SonarQube Analysis** - Análise de qualidade de código
+3. **Quality Gate** - Portão de qualidade automático
+4. **Nexus Repository** - Armazenamento de artefatos
+5. **Docker Build & Push** - Construção e envio de imagens
+6. **K3s Deploy** - Deploy automático no Kubernetes
 
-### Jenkins + Docker Swarm
-- Deploy automático via pipelines
-- Orquestração de containers
-- Scaling automático
+### Comunicação entre Labs
 
-## 📁 Estrutura do Projeto
+#### Jenkins (192.168.56.20) se comunica com:
+- **SonarQube** (192.168.56.30:9000) - Análise de código
+- **Nexus** (192.168.56.20:8081) - Upload de artefatos
+- **K3s** (192.168.56.40:6443) - Deploy Kubernetes
+- **Docker Registry** (192.168.56.40:5000) - Push de imagens
 
+#### Fluxo de Dados:
 ```
-lab-devOps-2/
-├── README.md                    # Este arquivo
-├── lab-jenkins/                 # Laboratório Jenkins
-│   ├── Vagrantfile
-│   ├── provision.sh
-│   └── README.md
-├── lab-sonarqube/              # Laboratório SonarQube
-│   ├── Vagrantfile
-│   ├── provision.sh
-│   ├── docker-compose.yml
-│   └── README.md
-└── lab-swarm/                  # Laboratório Docker Swarm
-    ├── Vagrantfile
-    ├── provision.sh
-    └── README.md
+Jenkins → SonarQube (análise)
+   ↓
+Nexus (artefatos) → Docker Registry (imagens)
+   ↓
+K3s (deploy final)
 ```
+
+### Configurações de Rede
+Todos os labs estão na mesma rede privada `192.168.56.0/24` permitindo comunicação direta entre os serviços.
+
 
 ## 🌐 Rede e Portas
 
 | Serviço | IP | Porta | Acesso |
 |---------|----|----|--------|
 | Jenkins | 192.168.56.20 | 8080 | http://localhost:8080 |
+| Nexus | 192.168.56.20 | 8081 | http://localhost:8081 |
 | SonarQube | 192.168.56.30 | 9000 | http://localhost:9000 |
+| K3s Master | 192.168.56.40 | 6443 | Kubernetes API |
+| Docker Registry | 192.168.56.40 | 5000 | http://localhost:5000 |
+| K3s Apps | 192.168.56.40 | 80 | http://localhost:8084 |
 | Swarm Manager | 192.168.56.10 | - | SSH only |
 | Swarm Worker 1 | 192.168.56.11 | - | SSH only |
 | Swarm Worker 2 | 192.168.56.12 | - | SSH only |
 
-## 🔧 Comandos Úteis
-
-```bash
-# Status de todos os labs
-vagrant global-status
-
-# Parar todos os labs
-cd lab-jenkins && vagrant halt
-cd lab-sonarqube && vagrant halt
-cd lab-swarm && vagrant halt
-
-# Destruir todos os labs
-cd lab-jenkins && vagrant destroy -f
-cd lab-sonarqube && vagrant destroy -f
-cd lab-swarm && vagrant destroy -f
-
-# SSH em qualquer VM
-vagrant ssh <vm-name>
-```
-
-## 🛠️ Solução de Problemas
-
-### Problemas de memória
-- Certifique-se de ter pelo menos 8GB RAM
-- Execute apenas os labs necessários
-- Ajuste a memória no Vagrantfile se necessário
-
-### Conflitos de porta
-- Verifique se as portas 8080 e 9000 estão livres
-- Modifique o port forwarding no Vagrantfile se necessário
-
-### Problemas de rede
-- Verifique se a rede 192.168.56.0/24 está disponível
-- Desabilite outros adaptadores de rede virtual se necessário
 
 ## 📚 Documentação
 
@@ -160,4 +139,6 @@ Cada laboratório possui sua própria documentação detalhada:
 - [Jenkins Lab](lab-jenkins/README.md)
 - [SonarQube Lab](lab-sonarqube/README.md)
 - [Docker Swarm Lab](lab-swarm/README.md)
+- [K3s Lab](lab-k3s/README.md)
+
 
