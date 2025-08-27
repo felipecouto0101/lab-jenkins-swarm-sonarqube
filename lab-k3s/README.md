@@ -51,13 +51,18 @@ vagrant up
    - **Kubernetes CLI plugin**
 4. **Restart Jenkins**
 
-### 2. Configurar Kubernetes Cloud
-1. **Manage Jenkins** → **Clouds** → **Add Cloud** → **Kubernetes**
-2. **Name**: `k3s`
-3. **Kubernetes URL**: `https://192.168.56.40:6443`
-4. **Disable https certificate check**: ✓ (para lab)
-5. **Test Connection** → Should work
-6. **Save**
+### 2. Instalar kubectl no Jenkins
+```bash
+# Acessar Jenkins VM
+cd ../lab-jenkins && vagrant ssh
+
+# Instalar kubectl
+curl -LO https://dl.k8s.io/release/v1.28.0/bin/linux/amd64/kubectl
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+# Verificar instalação
+kubectl version --client
+```
 
 ### 3. Configurar Credenciais K3s
 1. **Manage Jenkins** → **Credentials** → **System** → **Global credentials**
@@ -67,7 +72,22 @@ vagrant up
 5. **File**: Upload o arquivo `kubeconfig` do diretório lab-k3s
 6. **Save**
 
-### 4. Configurar Docker Registry
+**⚠️ IMPORTANTE**: Se você recriou o cluster K3s, deve atualizar as credenciais:
+- O arquivo `kubeconfig` é gerado automaticamente durante o provisionamento
+- Sempre use o arquivo mais recente após `vagrant up`
+- Atualize as credenciais no Jenkins se houver problemas de conectividade
+
+### 4. Configurar Kubernetes Cloud
+1. **Manage Jenkins** → **Clouds** → **Add Cloud** → **Kubernetes**
+2. **Name**: `k3s`
+3. **Kubernetes URL**: `https://192.168.56.40:6443`
+4. **Disable https certificate check**: ✓ (para lab)
+5. **Test Connection** → Should work
+6. **Save**
+
+
+
+### 5. Configurar Docker Registry
 ```bash
 # Acessar Jenkins VM
 cd ../lab-jenkins && vagrant ssh

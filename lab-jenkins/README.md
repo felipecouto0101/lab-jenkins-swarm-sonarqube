@@ -214,6 +214,14 @@ Vá em **Manage Jenkins > Manage Credentials > Global**:
 - Secret: [token do SonarQube]
 - ID: `sonar-token`
 
+### K3s
+- **Manage Jenkins** → **Credentials** → **System** → **Global credentials**
+- **Add Credentials** → **Secret file**
+- ID: `k3s`
+- Description: `K3s kubeconfig`
+- File: Upload o arquivo `kubeconfig` do diretório lab-k3s
+- Save
+
 #### Docker Swarm SSH:
 - Tipo: **SSH Username with private key**
 - Username: `vagrant`
