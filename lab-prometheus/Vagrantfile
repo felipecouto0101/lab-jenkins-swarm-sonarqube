@@ -1,0 +1,19 @@
+Vagrant.configure("2") do |config|
+  config.vbguest.auto_update = false if Vagrant.has_plugin?("vagrant-vbguest")
+  config.vm.boot_timeout = 600
+  
+  config.vm.define "prometheus" do |prometheus|
+    prometheus.vm.box = "ubuntu/focal64"
+    prometheus.vm.hostname = "prometheus"
+    prometheus.vm.provider "virtualbox" do |vb|
+      vb.memory = "2048"
+      vb.cpus = 2
+      vb.gui = false
+    end
+    prometheus.vm.provision "shell", path: "provision.sh"
+    prometheus.vm.network "private_network", ip: "192.168.56.50"
+    prometheus.vm.network "forwarded_port", guest: 9090, host: 9090
+    prometheus.vm.network "forwarded_port", guest: 9100, host: 9100
+    prometheus.vm.network "forwarded_port", guest: 3000, host: 3000
+  end
+end
