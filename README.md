@@ -1,6 +1,6 @@
 # DevOps Labs com Vagrant
 
-Este projeto contém 4 laboratórios práticos de DevOps usando Vagrant e VirtualBox para criar ambientes isolados e reproduzíveis com pipeline CI/CD completo.
+Este projeto contém 5 laboratórios práticos de DevOps usando Vagrant e VirtualBox para criar ambientes isolados e reproduzíveis com pipeline CI/CD completo.
 
 ## 🎯 Objetivo
 
@@ -62,6 +62,18 @@ Cluster Kubernetes lightweight com:
 **Acesso**: http://localhost:8084 (apps), Registry: http://localhost:5000  
 **Recursos**: 2GB RAM, 2 CPUs
 
+### 5. 📊 Prometheus Lab
+**Localização**: `lab-prometheus/`
+
+Sistema de monitoramento completo com:
+- Prometheus + Node Exporter
+- Grafana + Dashboards
+- Stress testing tools
+- Métricas de sistema Linux
+
+**Acesso**: http://localhost:9090 (Prometheus), http://localhost:3000 (Grafana)  
+**Recursos**: 2GB RAM, 2 CPUs
+
 ## 🚀 Início Rápido
 
 ### Executar um laboratório específico:
@@ -74,6 +86,9 @@ cd lab-sonarqube && vagrant up
 
 # Docker Swarm
 cd lab-swarm && vagrant up
+
+# Prometheus
+cd lab-prometheus && vagrant up
 ```
 
 ### Executar todos os laboratórios:
@@ -83,6 +98,7 @@ cd lab-jenkins && vagrant up &
 cd lab-sonarqube && vagrant up &
 cd lab-swarm && vagrant up &
 cd lab-k3s && vagrant up &
+cd lab-prometheus && vagrant up &
 ```
 
 ## 🔗 Integrações e Pipeline CI/CD
@@ -131,6 +147,9 @@ Todos os labs estão na mesma rede privada `192.168.56.0/24` permitindo comunica
 | Swarm Manager | 192.168.56.10 | - | SSH only |
 | Swarm Worker 1 | 192.168.56.11 | - | SSH only |
 | Swarm Worker 2 | 192.168.56.12 | - | SSH only |
+| Prometheus | 192.168.56.50 | 9090 | http://localhost:9090 |
+| Grafana | 192.168.56.50 | 3000 | http://localhost:3000 |
+| Node Exporter | 192.168.56.50 | 9100 | http://localhost:9100 |
 
 
 ## 📚 Documentação
@@ -140,5 +159,6 @@ Cada laboratório possui sua própria documentação detalhada:
 - [SonarQube Lab](lab-sonarqube/README.md)
 - [Docker Swarm Lab](lab-swarm/README.md)
 - [K3s Lab](lab-k3s/README.md)
+- [Prometheus Lab](lab-prometheus/README.md)
 
 
